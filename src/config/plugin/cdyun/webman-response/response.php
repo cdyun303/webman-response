@@ -12,6 +12,8 @@ return [
         //  失败返回码
         'error' => getenv('ERROR_CODE') ? getenv('ERROR_CODE') : -1,
     ],
+    //  异常处理驱动
+    'exception'=>'',
     //  是否开启加密
     'enable' => !(getenv('APP_DEBUG') == 'true'),
     //  不需要加密的url，上传URL不需要加密
