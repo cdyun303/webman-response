@@ -8,14 +8,14 @@ return [
     //  返回码
     'code' => [
         //  成功返回码
-        'success' => getenv('SUCCESS_CODE') ? getenv('SUCCESS_CODE') : 0,
+        'success' => 0,
         //  失败返回码
-        'error' => getenv('ERROR_CODE') ? getenv('ERROR_CODE') : -1,
+        'error' => -1,
     ],
     //  异常处理驱动
     'exception'=>'',
     //  是否开启加密
-    'enable' => !(getenv('APP_DEBUG') == 'true'),
+    'enable' => false,
     //  不需要加密的url，上传URL不需要加密
     'url' => ['/web_api/core/ocr/scan', '/web_api/core/upload/direct'],
     //  RSA私钥
