@@ -84,7 +84,7 @@ class DecryptMiddleware implements MiddlewareInterface
      * @param $msg
      * @param $code
      * @return mixed
-     * @throws \Exception
+     * @throws \InvalidArgumentException
      * @author cdyun(121625706@qq.com)
      * @desc 抛出错误信息
      */
@@ -92,7 +92,7 @@ class DecryptMiddleware implements MiddlewareInterface
     {
         $exception = EncryptorEnforcer::getConfig('exception');
         if (empty($exception)) {
-            throw new \Exception('config配置文件中，未找到异常处理驱动');
+            throw new \InvalidArgumentException('config配置文件中，未找到异常处理驱动');
         }
         throw new $exception($msg, $code);
 
