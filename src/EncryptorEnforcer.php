@@ -14,11 +14,10 @@ use support\Log;
 class EncryptorEnforcer
 {
     /**
+     * RSA解密
      * @param string|null $data
      * @return string
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc RSA解密
      */
     public static function rsaDecrypt(?string $data): string
     {
@@ -27,7 +26,7 @@ class EncryptorEnforcer
                 throw new \Exception('解密数据不能为空');
             }
 
-            $privateKeyContent = self::getConfig('rsa_private');
+            $privateKeyContent = ResponseEnforcer::getConfig('rsa_private');
             if (!$privateKeyContent) {
                 throw new \Exception('未设置解密私钥');
             }
@@ -56,33 +55,17 @@ class EncryptorEnforcer
                 'trace' => $e->getTraceAsString()
             ]);
             // 避免暴露具体错误信息
-            throw new \Exception('RSA解密失败');
+            ResponseEnforcer::throwError('RSA解密失败');
         }
     }
 
     /**
-     * @param string|null $name - 名称
-     * @param $default - 默认值
-     * @return mixed
-     * @author cdyun(121625706@qq.com)
-     * @desc 获取配置config
-     */
-    public static function getConfig(?string $name = null, $default = null): mixed
-    {
-        if (!is_null($name)) {
-            return config('plugin.cdyun.webman-response.response.' . $name, $default);
-        }
-        return config('plugin.cdyun.webman-response.response');
-    }
-
-    /**
+     * AES解密
      * @param string|null $data
      * @param string $key - AES密钥
      * @param string $iv - AES IV
      * @return array
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc AES解密
      */
     public static function aesDecrypt(?string $data, string $key, string $iv): array
     {
@@ -121,18 +104,17 @@ class EncryptorEnforcer
                 'trace' => $e->getTraceAsString()
             ]);
             // 避免暴露具体错误信息
-            throw new \Exception('AES解密失败');
+            ResponseEnforcer::throwError('AES解密失败');
         }
     }
 
     /**
+     * AES加密
      * @param $data
      * @param string $key - AES密钥
      * @param string $iv - AES IV
      * @return string
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc AES加密
      */
     public static function aesEncrypt($data, string $key, string $iv): string
     {
@@ -163,7 +145,7 @@ class EncryptorEnforcer
                 'trace' => $e->getTraceAsString()
             ]);
             // 避免暴露具体错误信息
-            throw new \Exception('AES加密失败');
+            ResponseEnforcer::throwError('AES加密失败');
         }
     }
 

@@ -18,7 +18,6 @@ class ResponseEnforcer
      * @param array|string $msg - 提示信息，若为数组则视为 data 数据
      * @param mixed|null $data - 需要返回的数据
      * @return Response
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
      */
     public static function success(array|string $msg = '操作成功', mixed $data = null): Response
@@ -72,12 +71,11 @@ class ResponseEnforcer
      * @param $result
      * @param bool $isEncrypt - 是否需要加密
      * @return Response
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
      */
     public static function result($result, bool $isEncrypt = false): Response
     {
-        if ($isEncrypt && !empty($result['data'])){
+        if ($isEncrypt && !empty($result['data'])) {
             try {
                 $aesKey = request()->aes_key;
                 $aesIv = request()->aes_iv;
@@ -86,7 +84,7 @@ class ResponseEnforcer
                 }
                 $result['encrypt_data'] = EncryptorEnforcer::aesEncrypt($result['data'], $aesKey, $aesIv);
 
-            } catch (\Exception $e){
+            } catch (\Exception $e) {
                 self::error($e->getMessage());
             }
             unset($result['data']);
@@ -101,13 +99,12 @@ class ResponseEnforcer
      * @param array|string $msg - 错误消息，可以是字符串或数组如果提供数组，将被视为错误数据
      * @param mixed|null $data - 附加数据，用于提供额外的错误信息，默认为null
      * @return Response
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
      */
     public static function error(array|string $msg = '操作失败', mixed $data = null): Response
     {
         $result = [];
-        $result['code'] =self::getCode('error');
+        $result['code'] = self::getCode('error');
         $result['time'] = time();
 
         if (is_array($msg)) {
@@ -124,25 +121,37 @@ class ResponseEnforcer
     }
 
     /**
-     * @param string $msg - 错误消息
+     * 抛出异常并终止程序执行
+     * @param string $msg - 错误消息，默认为"服务器内部错误"
      * @param int|null $code - 错误代码，如果未提供，则使用默认的错误代码
-     * @return mixed
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc 抛出异常并终止程序执行
      */
-    public static function abort(string $msg = '服务器内部错误', ?int $code = null): mixed
+    public static function abort(string $msg = '服务器内部错误', ?int $code = null)
     {
-        throw new \Exception($msg, $code ?? self::getCode('error'));
+        self::throwError($msg, $code ?? self::getCode('error'));
+    }
+
+    /**
+     * 抛出异常
+     * @param $msg
+     * @param null $code
+     */
+    public static function throwError($msg, $code = null)
+    {
+        $exception = self::getConfig('exception');
+        if (empty($exception)) {
+            throw new \InvalidArgumentException('Response 插件的配置文件中，未找到异常处理驱动');
+        }
+        throw new $exception($msg, $code);
+
     }
 
     /**
      * 构造分页响应数据
      * @param array $data - 分页数据
      * @param int $totalCount - 总条目数
-     * @param string $msg - 响应消息
+     * @param string $msg
      * @return Response
-     * @throws \Exception
      * @author cdyun(121625706@qq.com)
      */
     public static function paginate(array $data = [], int $totalCount = 0, string $msg = '加载完成'): Response
