@@ -4,6 +4,7 @@
  * @author cdyun(121625706@qq.com)
  * @date 2025/9/22 23:00
  */
+
 declare(strict_types=1);
 
 namespace Cdyun\WebmanResponse;
@@ -13,19 +14,17 @@ use support\Response;
 class ResponseEnforcer
 {
     /**
+     * 成功响应数据
      * @param array|string $msg - 提示信息，若为数组则视为 data 数据
      * @param mixed|null $data - 需要返回的数据
-     * @param int|null $code - 状态码，默认由 getCode('success') 提供
-     * @param bool $is_encrypt - 是否需要加密
      * @return Response
      * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc 构造成功响应数据并返回
      */
-    public static function success(array|string $msg = '操作成功', mixed $data = null, ?int $code = null, bool $is_encrypt = true): Response
+    public static function success(array|string $msg = '操作成功', mixed $data = null): Response
     {
         $result = [];
-        $result['code'] = $code ?? self::getCode('success');
+        $result['code'] = self::getCode('success');
         $result['time'] = time();
 
         if (is_array($msg)) {
@@ -38,7 +37,8 @@ class ResponseEnforcer
             }
         }
 
-        return self::result($result, $is_encrypt);
+        $isEncrypt = self::getConfig('enable');
+        return self::result($result, $isEncrypt);
     }
 
     /**
@@ -68,42 +68,46 @@ class ResponseEnforcer
     }
 
     /**
+     * 响应结果
      * @param $result
-     * @param bool $is_encrypt - 是否需要加密
+     * @param bool $isEncrypt - 是否需要加密
      * @return Response
      * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc 响应结果
      */
-    public static function result($result, bool $is_encrypt = true): Response
+    public static function result($result, bool $isEncrypt = false): Response
     {
-        $enableEncrypt = self::getConfig('enable');
-        // 如果不需要加密或 data 不存在，则直接返回结果
-        if (!$enableEncrypt || !isset($result['data']) || !$is_encrypt) {
+        if ($isEncrypt && !empty($result['data'])){
+            try {
+                $aesKey = request()->aes_key;
+                $aesIv = request()->aes_iv;
+                if (empty($aesKey) || empty($aesIv)) {
+                    throw new \Exception('aes_key or aes_iv is empty');
+                }
+                $result['encrypt_data'] = EncryptorEnforcer::aesEncrypt($result['data'], $aesKey, $aesIv);
+
+            } catch (\Exception $e){
+                self::error($e->getMessage());
+            }
+            unset($result['data']);
             return new Response(200, ['Content-Type' => 'application/json'], json_encode($result, JSON_UNESCAPED_UNICODE));
         }
-        $aesKey = request()->aes_key;
-        $aesIv = request()->aes_iv;
 
-        $result['encrypt_data'] = EncryptorEnforcer::aesEncrypt($result['data'], $aesKey, $aesIv);
-        unset($result['data']);
         return new Response(200, ['Content-Type' => 'application/json'], json_encode($result, JSON_UNESCAPED_UNICODE));
     }
 
     /**
+     * 构建和返回一个错误响应，允许通过参数自定义错误消息、错误代码和附加数据
      * @param array|string $msg - 错误消息，可以是字符串或数组如果提供数组，将被视为错误数据
      * @param mixed|null $data - 附加数据，用于提供额外的错误信息，默认为null
-     * @param int|null $code - 错误代码，如果未提供，则使用默认的错误代码
-     * @param bool $is_encrypt - 是否需要加密
      * @return Response
      * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc 构建和返回一个错误响应，允许通过参数自定义错误消息、错误代码和附加数据
      */
-    public static function error(array|string $msg = '操作失败', mixed $data = null, ?int $code = null, bool $is_encrypt = false): Response
+    public static function error(array|string $msg = '操作失败', mixed $data = null): Response
     {
         $result = [];
-        $result['code'] = $code ?? self::getCode('error');
+        $result['code'] =self::getCode('error');
         $result['time'] = time();
 
         if (is_array($msg)) {
@@ -116,7 +120,7 @@ class ResponseEnforcer
             }
         }
 
-        return self::result($result, $is_encrypt);
+        return self::result($result, false);
     }
 
     /**
@@ -133,17 +137,15 @@ class ResponseEnforcer
     }
 
     /**
+     * 构造分页响应数据
      * @param array $data - 分页数据
      * @param int $totalCount - 总条目数
      * @param string $msg - 响应消息
-     * @param int|null $code - 响应状态码，默认为错误码
-     * @param bool $is_encrypt - 是否需要加密
      * @return Response
      * @throws \Exception
      * @author cdyun(121625706@qq.com)
-     * @desc 构造分页响应数据
      */
-    public static function paginate(array $data = [], int $totalCount = 0, string $msg = '加载完成', ?int $code = null, bool $is_encrypt = true): Response
+    public static function paginate(array $data = [], int $totalCount = 0, string $msg = '加载完成'): Response
     {
         // 校验 totalCount 合法性
         if (!is_int($totalCount) || $totalCount < 0) {
@@ -151,12 +153,13 @@ class ResponseEnforcer
         }
 
         $result = [
-            'code' => $code ?? self::getCode('success'),
+            'code' => self::getCode('success'),
             'message' => $msg,
             'data' => $data,
             'count' => $totalCount,
         ];
 
-        return self::result($result, $is_encrypt);
+        $isEncrypt = self::getConfig('enable');
+        return self::result($result, $isEncrypt);
     }
 }
